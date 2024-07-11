@@ -5,7 +5,7 @@ import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
 
 class XmlSpriteSheet {
-  XmlSpriteSheet(this.image, String xml) {
+  XmlSpriteSheet(this.images, String xml) {
     final document = XmlDocument.parse(xml);
     for (final node in document.xpath('//TextureAtlas/SubTexture')) {
       final category = node.getAttribute('CATEGORY')!;
@@ -15,20 +15,36 @@ class XmlSpriteSheet {
       final y = double.parse(node.getAttribute('TEX_Y')!);
       final width = double.parse(node.getAttribute('TEX_WIDTH')!);
       final height = double.parse(node.getAttribute('TEX_HEIGHT')!);
+
+      // Associa a imagem correta ao partName
+      final imageIndex = imagesMap[texName];
+      if (imageIndex == null) {
+        throw ArgumentError('Imagem $texName não encontrada na lista de imagens.');
+      }
+
       _rects[partName] = Rect.fromLTWH(x, y, width, height);
+      _imageMap[partName] = images[imageIndex];
     }
   }
 
-  final ui.Image image;
+  final List<ui.Image> images;
   final _rects = <String, Rect>{};
+  final _imageMap = <String, ui.Image>{};
+  final imagesMap = {
+    'AltarOfHarmony_03.png': 0,
+    'AltarOfHarmony_02.png': 1,
+    'AltarOfHarmony_01.png': 2,
+    // Adicione mais mapeamentos conforme necessário
+  };
 
   Sprite getSprite(String name) {
     final rect = _rects[name];
-    if (rect == null) {
-      throw ArgumentError('Sprite $name not found');
+    final image = _imageMap[name];
+    if (rect == null || image == null) {
+      throw ArgumentError('Sprite $name não encontrado.');
     }
     return Sprite(
-      image.clone(),
+      image,
       srcPosition: rect.topLeft.toVector2(),
       srcSize: rect.size.toVector2(),
     );
